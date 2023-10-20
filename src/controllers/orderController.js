@@ -1,4 +1,4 @@
-import mysqlConnection from "../mysql.js";
+import oracleConnection from "../oracle.js";
 
 class OrderController {
   // -------------------------------------------------------------------------------- GET /orders
@@ -6,146 +6,156 @@ class OrderController {
     const query = 'SELECT * FROM orders';
 
     try {
-      mysqlConnection.query(query, (err, results) => {
+      oracleConnection.execute(query, (err, results) => {
         if (err){
           console.log(err);
           return res.status(500).json({ error: 'Internal Server Error' });
         } else{
-          console.log(results);
-          return res.status(200).json(results);
+          console.log(results.rows);
+          return res.status(200).json(results.rows);
         }
       });
-    } catch (err) { 
+    } catch (err) {
       console.log(err);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }
 
 
-  // -------------------------------------------------------------------------------- GET /orders/:id
+  // -------------------------------------------------------------------------------- GET /orders/:orderLineId
   async getOrderById(req, res) {
-    const query = 'SELECT * FROM orders WHERE id = ?';
-    const id = req.params.id; // Obtén el ID del parámetro de consulta
+    const query = 'SELECT * FROM orders WHERE order_line_id = :orderLineId';
+    const orderLineId = req.params.orderLineId; 
 
     try {
-      mysqlConnection.query(query, [id], (err, results) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ error: 'Internal Server Error' });
-        } else {
-          if (results.length === 0) {
-            console.error('Order not found');
-            return res.status(404).json({ error: 'Order not found' });
-          }
-          console.log(results);
-          return res.status(200).json(results);
-        }
-      });
+      const result = await oracleConnection.execute(query, [orderLineId]);
+      if (result.rows.length === 0) {
+        console.error('Order not found');
+        return res.status(404).json({ error: 'Order not found' });
+      } else {
+        console.log(result.rows);
+        return res.status(200).json(result.rows);
+      }
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal Server Error' });
+      console.error(err);
+      return res.status(500).json({ error: 'Internal Server Error' });
     }
   }
 
 
   // -------------------------------------------------------------------------------- POST /orders
   async postOrder(req, res) {
-    const query = 'INSERT INTO orders (order_line_id, id, order_priority, customer_id, customer_segment, product_id, product_container, profit, quantity_ordered, sales, discount, gross_unit_price, shipping_cost, ship_mode, ship_date, order_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO orders (order_line_id, id, order_priority, customer_id, customer_segment, product_id, product_container, profit, quantity_ordered, sales, discount, gross_unit_price, shipping_cost, ship_mode, ship_date, order_date) VALUES (:orderLineId, :id, :orderPriority, :customerId, :customerSegment, :productId, :productContainer, :profit, :quantityOrdered, :sales, :discount, :grossUnitPrice, :shippingCost, :shipMode, :shipDate, :orderDate)';
     const { orderLineId, id, orderPriority, customerId, customerSegment, productId, productContainer, profit, 
       quantityOrdered, sales, discount, grossUnitPrice, shippingCost, shipMode, shipDate, orderDate } = req.body;
-    const values = [orderLineId, id, orderPriority, customerId, customerSegment, productId, productContainer, profit, 
-      quantityOrdered, sales, discount, grossUnitPrice, shippingCost, shipMode, shipDate, orderDate];
-
+    const values = { 
+      orderLineId: orderLineId, 
+      id: id, 
+      orderPriority: orderPriority, 
+      customerId: customerId, 
+      customerSegment: customerSegment, 
+      productId: productId, 
+      productContainer: productContainer, 
+      profit: profit, 
+      quantityOrdered: quantityOrdered, 
+      sales: sales, 
+      discount: discount, 
+      grossUnitPrice: grossUnitPrice, 
+      shippingCost: shippingCost, 
+      shipMode: shipMode, 
+      shipDate: shipDate, 
+      orderDate: orderDate
+    };
+  
     try {
-      mysqlConnection.query(query, values, (err, results) => {
-        if (err) {
-          console.log(err);
-          return res.status(500).json({ error: 'Internal Server Error' });
-        } else {
-          const newOrder = {
-            order_line_id: orderLineId, 
-            id: id, 
-            order_pririty: orderPriority, 
-            customer_id: customerId, 
-            customer_segment: customerSegment, 
-            product_id: productId, 
-            product_container: productContainer, 
-            profit: profit, 
-            quantity_ordered: quantityOrdered, 
-            sales: sales, 
-            discount: discount, 
-            gross_unit_price: grossUnitPrice, 
-            shiping_cost: shippingCost, 
-            ship_mode: shipMode, 
-            ship_date: shipDate, 
-            order_date: orderDate
-          };
-          console.log(newOrder);
-          return res.status(201).json(newOrder);
-        }
-      });
+      const result = await oracleConnection.execute(query, values, { autoCommit: true });
+      const newOrder = {
+        order_line_id: orderLineId, 
+        id: id, 
+        order_priority: orderPriority, 
+        customer_id: customerId, 
+        customer_segment: customerSegment, 
+        product_id: productId, 
+        product_container: productContainer, 
+        profit: profit, 
+        quantity_ordered: quantityOrdered, 
+        sales: sales, 
+        discount: discount, 
+        gross_unit_price: grossUnitPrice, 
+        shipping_cost: shippingCost, 
+        ship_mode: shipMode, 
+        ship_date: shipDate, 
+        order_date: orderDate
+      };
+      console.log(newOrder);
+      return res.status(201).json(newOrder);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   }
-
-
-  // -------------------------------------------------------------------------------- PUT /orders/:id
-  async putOrder(req, res) {
-    const id = req.params.id;
-    const queryCheck = 'SELECT * FROM orders WHERE id = ?';
-    const queryUpdate = 'UPDATE orders SET order_line_id = ?, order_priority = ?, customer_id = ?, customer_segment = ?, product_id = ?, product_container = ?, profit = ?, quantity_ordered = ?, sales = ?, discount = ?, gross_unit_price = ?, shipping_cost = ?, ship_mode = ?, ship_date = ?, order_date = ? WHERE id = ?';
-    const { orderLineId, orderPriority, customerId, customerSegment, productId, productContainer, profit, 
-      quantityOrdered, sales, discount, grossUnitPrice, shippingCost, shipMode, shipDate, orderDate } = req.body;
-    const valuesCheck = [id];
   
-    mysqlConnection.query(queryCheck, valuesCheck, (error, results) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Internal Server Error' });
-      }
-      if (results.length === 0) {
+
+  // -------------------------------------------------------------------------------- PUT /orders/:orderLineId
+  async putOrder(req, res) {
+    const orderLineId = req.params.orderLineId;
+    const queryCheck = 'SELECT * FROM orders WHERE order_line_id = :orderLineId'; 
+    const queryUpdate = 'UPDATE orders SET id = :id, order_priority = :orderPriority, customer_id = :customerId, customer_segment = :customerSegment, product_id = :productId, product_container = :productContainer, profit = :profit, quantity_ordered = :quantityOrdered, sales = :sales, discount = :discount, gross_unit_price = :grossUnitPrice, shipping_cost = :shippingCost, ship_mode = :shipMode, ship_date = :shipDate, order_date = :orderDate WHERE order_line_id = :orderLineId';
+    const { id, orderPriority, customerId, customerSegment, productId, productContainer, profit, 
+      quantityOrdered, sales, discount, grossUnitPrice, shippingCost, shipMode, shipDate, orderDate } = req.body;
+    const valuesCheck = { orderLineId: orderLineId }; 
+    
+    try {
+      const resultCheck = await oracleConnection.execute(queryCheck, valuesCheck);
+      if (resultCheck.rows.length === 0) {
         return res.status(404).json({ error: 'Order not found' });
       }
-  
-      const valuesUpdate = [orderLineId, orderPriority, customerId, customerSegment, productId, productContainer, profit, 
-        quantityOrdered, sales, discount, grossUnitPrice, shippingCost, shipMode, shipDate, orderDate, id];
-  
-      try {
-        mysqlConnection.query(queryUpdate, valuesUpdate, (err, results) => {
-          if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Internal Server Error' });
-          } else {
-            const updatedOrder = {
-              order_line_id: orderLineId, 
-              id: id, 
-              order_pririty: orderPriority, 
-              customer_id: customerId, 
-              customer_segment: customerSegment, 
-              product_id: productId, 
-              product_container: productContainer, 
-              profit: profit, 
-              quantity_ordered: quantityOrdered, 
-              sales: sales, 
-              discount: discount, 
-              gross_unit_price: grossUnitPrice, 
-              shiping_cost: shippingCost, 
-              ship_mode: shipMode, 
-              ship_date: shipDate, 
-              order_date: orderDate
-            };
-            console.log(updatedOrder);
-            return res.status(200).json(updatedOrder);
-          }
-        });
-      } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Internal Server Error' });
-      }
-    });
-  }
+    
+      const valuesUpdate = { 
+        orderLineId: orderLineId, 
+        id: id,
+        orderPriority: orderPriority, 
+        customerId: customerId, 
+        customerSegment: customerSegment, 
+        productId: productId, 
+        productContainer: productContainer, 
+        profit: profit, 
+        quantityOrdered: quantityOrdered, 
+        sales: sales, 
+        discount: discount, 
+        grossUnitPrice: grossUnitPrice, 
+        shippingCost: shippingCost, 
+        shipMode: shipMode, 
+        shipDate: shipDate, 
+        orderDate: orderDate
+      };
+    
+      const resultUpdate = await oracleConnection.execute(queryUpdate, valuesUpdate, { autoCommit: true });
+      const updatedOrder = {
+        order_line_id: orderLineId, 
+        id: id,
+        order_priority: orderPriority, 
+        customer_id: customerId, 
+        customer_segment: customerSegment, 
+        product_id: productId, 
+        product_container: productContainer, 
+        profit: profit, 
+        quantity_ordered: quantityOrdered, 
+        sales: sales, 
+        discount: discount, 
+        gross_unit_price: grossUnitPrice, 
+        shipping_cost: shippingCost, 
+        ship_mode: shipMode, 
+        ship_date: shipDate, 
+        order_date: orderDate
+      };
+      console.log(updatedOrder);
+      return res.status(200).json(updatedOrder);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }    
 }
 
 export default OrderController;

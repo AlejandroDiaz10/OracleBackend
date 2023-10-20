@@ -1,9 +1,9 @@
 const ROUTES = {
+    CUSTOMERS: '/api/customers',
+    PRODUCTS: '/api/products',
+    ORDERS: '/api/orders',
+    CREDIT_STATUS: '/api/credit-status',
     CREDIT_LINE: '/api/credit-lines',
-    ORDER: '/api/orders',
-    PRODUCT: '/api/products',
-    PRODUCT_CATEGORY: '/api/product-categories',
-    USER: '/api/users',
 };
 
 export default ROUTES;

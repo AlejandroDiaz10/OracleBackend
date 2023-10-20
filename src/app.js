@@ -1,6 +1,9 @@
 import express from 'express';
-import mysqlConnection from './mysql.js';
-import creditLineRouter from './routes/creditLine.js';
+import oracleConnection from './oracle.js';
+import customerRouter from './routes/customer.js';
+import productRouter from './routes/product.js';
+import orderRouter from './routes/order.js';
+import creditStatusRouter from './routes/creditStatus.js';
 const app = express();
 
 // ------------------------------ Express configuration
@@ -8,16 +11,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ------------------------------ Checking DB connection
-mysqlConnection.connect((err) => {
-    if (err) {
-      console.error('Error connecting to database!', err);
-      return;
-    }
-    console.log('Connected to MySQL database!');
-});
+if (oracleConnection) {
+  console.log('Connected to Oracle database!');
+} else {
+  console.error('Error connecting to Oracle database!');
+}
 
 // ------------------------------ Routes
-app.use(creditLineRouter);
+app.use(customerRouter);
+app.use(productRouter);
+app.use(orderRouter);
+app.use(creditStatusRouter);
 
 
 // ------------------------------ Listening port
