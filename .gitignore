@@ -1,0 +1,6 @@
+# In order to install all dependencies used in this project: npm i
+.DS_Store
+node_modules/
+.env
+commands.txt
+oracle-connection.txt
