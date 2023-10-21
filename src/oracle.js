@@ -15,7 +15,7 @@ async function runApp() {
         connection = await oracledb.getConnection({
             user: process.env.ORACLE_DB_USER,
             password: process.env.ORACLE_DB_PWD,
-            connectionString: process.env.ORACLE_CONNECTION_STRING,
+            connectionString: process.env.ORACLE_CONNECTION_STRING2,
         });
     } catch (err) {
         console.error(err);
