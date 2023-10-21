@@ -5,6 +5,9 @@ import ROUTES from "./constants.js";
 const productRouter = Router();
 const controller = new ProductController();
 
+productRouter.get(ROUTES.PRODUCTS + "/testing", controller.getAllProducts2);
+productRouter.get(ROUTES.PRODUCTS + "/test/:id", controller.getProductByDescription);
+
 productRouter.get(ROUTES.PRODUCTS, controller.getAllProducts);
 productRouter.get(ROUTES.PRODUCTS + "/:id", controller.getProductById);
 productRouter.post(ROUTES.PRODUCTS, controller.postProduct);

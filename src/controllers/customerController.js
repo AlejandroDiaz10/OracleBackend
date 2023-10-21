@@ -1,4 +1,5 @@
 import oracleConnection from "../oracle.js";
+import elasticClient from "../elastic-client.js";
 
 class CustomerController {
   // -------------------------------------------------------------------------------- GET /customers
@@ -123,6 +124,50 @@ class CustomerController {
       return res.status(200).json(updatedCustomer);
     } catch (err) {
       console.error(err);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  // -------------------------------------------------------------------------------- ElasticSearch
+  // -------------------------------------------------------------------------------- ElasticSearch
+  async getAll(req, res) {
+    const query = {
+      index: 'customers',
+      body: {
+        query: {
+          match_all: {}
+        }
+      }
+    };
+
+    try {
+      const body = await elasticClient.search(query);
+      console.log("res", body);
+      if (body.hits.total.value === 0) {
+        return res.status(404).json({ error: 'No customers found' });
+      }
+      const customers = body.hits.hits.map((hit) => hit._source);
+      return res.status(200).json(customers);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  async getId(req, res) {
+    let query = {
+      index: 'customers',
+      id: req.params.id
+    };
+  
+    try {
+      const body = await elasticClient.get(query);
+      if (!body.found) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+      return res.status(200).json(body._source);
+    } catch (error) {
+      console.error(error);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   }

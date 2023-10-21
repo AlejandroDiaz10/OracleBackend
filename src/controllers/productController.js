@@ -1,4 +1,5 @@
 import oracleConnection from "../oracle.js";
+import elasticClient from "../elastic-client.js";
 
 class ProductController {
   // -------------------------------------------------------------------------------- GET /products
@@ -122,6 +123,53 @@ class ProductController {
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   }  
+
+  // -------------------------------------------------------------------------------- ElasticSearch
+  // -------------------------------------------------------------------------------- ElasticSearch
+  async getAllProducts2(req, res) {
+    const query = {
+      index: 'products',
+      body: {
+        query: {
+          match_all: {}
+        }
+      }
+    };
+  
+    try {
+      const body = await elasticClient.search(query);
+      if (body.hits.total.value === 0) {
+        return res.status(404).json({ error: 'No products found' });
+      }
+      const products = body.hits.hits.map((hit) => hit._source);
+      return res.status(200).json(products);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  
+  async getProductByDescription(req, res) {
+    let query = {
+      index: 'products',
+      id: req.params.id
+    }
+
+    elasticClient.get(query)
+    .then(resp=>{
+      if(!resp){
+        return res.status(404).json({ error: 'Product not found' });
+      }
+      return res.status(200).json({
+        product: resp
+      });
+    })
+    .catch(err=>{
+      console.error(err);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    });
+  }
 }
 
 export default ProductController;
