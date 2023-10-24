@@ -7,6 +7,7 @@ const controller = new OrderController();
 
 orderRouter.get(ROUTES.ORDERS, controller.getAllOrders);
 orderRouter.get(ROUTES.ORDERS + "/:orderLineId", controller.getOrderById);
+orderRouter.get(ROUTES.ORDERS + "/customer/:customerId", controller.getOrdersByCustomerId);
 orderRouter.post(ROUTES.ORDERS, controller.postOrder);
 orderRouter.put(ROUTES.ORDERS + "/:orderLineId", controller.putOrder);
 

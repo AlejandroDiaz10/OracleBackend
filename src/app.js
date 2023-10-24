@@ -1,5 +1,4 @@
 import express from 'express';
-import bodyParser from 'body-parser';
 import elasticClient from './elastic-client.js';
 import oracleConnection from './oracle.js';
 import customerRouter from './routes/customer.js';
@@ -24,6 +23,9 @@ if (oracleConnection) {
 // ------------------------------ Checking Elasticseacrh connection
 if (elasticClient) {
   // fetchAndIndexData("customers");
+  // fetchAndIndexData("products");
+  // fetchAndIndexData("orders");
+  // fetchAndIndexData("credit_status");
 } else {
   console.error('Error connecting to Elasticsearch!');
 }

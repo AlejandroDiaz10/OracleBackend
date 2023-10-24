@@ -130,6 +130,8 @@ class CustomerController {
 
   // -------------------------------------------------------------------------------- ElasticSearch
   // -------------------------------------------------------------------------------- ElasticSearch
+
+  // -------------------------------------------------------------------------------- GET /elastic-search/api/customers
   async getAll(req, res) {
     const query = {
       index: 'customers',
@@ -154,21 +156,81 @@ class CustomerController {
     }
   }
 
+  // -------------------------------------------------------------------------------- GET /elastic-search/customers/:id
   async getId(req, res) {
+    // let query = {
+    //   index: 'customers',
+    //   body: {
+    //     query: {
+    //         match: {
+    //             "id": req.params.id
+    //         }
+    //     }
+    //   }
+    // };
     let query = {
       index: 'customers',
-      id: req.params.id
-    };
+      body: {
+        query: {
+          term: {
+            "id.keyword": req.params.id
+          }
+        }
+      }
+  };
   
     try {
-      const body = await elasticClient.get(query);
-      if (!body.found) {
+      const body = await elasticClient.search(query);
+      if (body.hits.total.value === 0) {
+        console.error('Customer not found');
+        console.error('body', body);
         return res.status(404).json({ error: 'Customer not found' });
+      } else{
+        console.log("res", body);
+        return res.status(200).json(body.hits.hits[0]._source);
       }
-      return res.status(200).json(body._source);
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Internal Server Error' });
+      if (!error.meta.body.found){
+        console.error('Customer not found');
+        return res.status(404).json({ error: 'Customer not found' });
+      } else{
+        console.error(error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------------- GET /elastic-search/customers/:ssn
+  async getSsn(req, res) {
+    let query = {
+      index: 'customers',
+      body: {
+        query: {
+          term: {
+            "ssn.keyword": req.params.ssn
+          }
+        }
+      }
+  };
+  
+    try {
+      const body = await elasticClient.search(query);
+      if (body.hits.total.value === 0) {
+        console.error('Customer not found');
+        console.error('body', body);
+        return res.status(404).json({ error: 'Customer not found' });
+      } else{
+        console.log("res", body);
+        return res.status(200).json(body.hits.hits[0]._source);
+      }
+    } catch (error) {
+      if (!error.meta.body.found){
+        console.error('Customer not found');
+        return res.status(404).json({ error: 'Customer not found' });
+      } else{
+        console.error(error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
     }
   }
 }

@@ -126,7 +126,9 @@ class ProductController {
 
   // -------------------------------------------------------------------------------- ElasticSearch
   // -------------------------------------------------------------------------------- ElasticSearch
-  async getAllProducts2(req, res) {
+
+  // -------------------------------------------------------------------------------- GET /elastic-search/api/products
+  async getAll(req, res) {
     const query = {
       index: 'products',
       body: {
@@ -147,28 +149,6 @@ class ProductController {
       console.error(error);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
-  }
-
-  
-  async getProductByDescription(req, res) {
-    let query = {
-      index: 'products',
-      id: req.params.id
-    }
-
-    elasticClient.get(query)
-    .then(resp=>{
-      if(!resp){
-        return res.status(404).json({ error: 'Product not found' });
-      }
-      return res.status(200).json({
-        product: resp
-      });
-    })
-    .catch(err=>{
-      console.error(err);
-      return res.status(500).json({ error: 'Internal Server Error' });
-    });
   }
 }
 

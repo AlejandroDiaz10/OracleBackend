@@ -42,6 +42,92 @@ class OrderController {
     }
   }
 
+  // -------------------------------------------------------------------------------- GET /orders/customer/:customerId
+  async getOrdersByCustomerId(req, res) {
+    const query = 'SELECT * FROM orders WHERE customer_id = :customerId';
+    const customerId = req.params.customerId; 
+    const currentDate = new Date();
+    const filter = req.query.filter;
+
+    const formatDate = (dateString) => {
+      const parts = dateString.split('/'); 
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = `20${parts[2]}`; 
+      const formattedDate = `${year}-${month}-${day}`;
+      return formattedDate;
+    };
+
+    try {
+      const result = await oracleConnection.execute(query, [customerId]);
+      if (result.rows.length === 0) {
+        console.error('No orders found for this customer');
+        return res.status(404).json({ error: 'No orders found for this customer' });
+      } else {
+        if (filter === undefined) {
+          console.log(result.rows);
+          return res.status(200).json(result.rows);
+        } else if (filter === 'pending') {
+          const pendingOrders = result.rows.filter(order => {
+            const formattedDate = new Date(formatDate(order[14]));
+            return formattedDate > currentDate
+          });
+          
+          if (pendingOrders.length === 0) {
+            console.error('No pending orders found for this customer');
+            return res.status(200).json({ message: 'No pending orders found for this customer' })
+          }
+
+          pendingOrders.sort((a, b) => {
+            const dateA = new Date(formatDate(a[14]));
+            const dateB = new Date(formatDate(b[14]));
+            if (dateA < dateB) {
+              return -1;
+            }
+            if (dateA > dateB) {
+                return 1;
+            }
+            return 0;
+          });
+
+          console.log(pendingOrders);
+          return res.status(200).json(pendingOrders);
+        } else if (filter === 'completed') {
+          const completedOrders = result.rows.filter(order => {
+            const formattedDate = new Date(formatDate(order[14]));
+            return formattedDate <= currentDate
+          });
+
+          if (completedOrders.length === 0) {
+            console.error('No completed orders found for this customer');
+            return res.status(200).json({ message: 'No completed orders found for this customer' })
+          }
+
+          completedOrders.sort((a, b) => {
+            const dateA = new Date(formatDate(a[14]));
+            const dateB = new Date(formatDate(b[14]));
+            if (dateA < dateB) {
+              return -1;
+            }
+            if (dateA > dateB) {
+                return 1;
+            }
+            return 0;
+          });
+
+          console.log(completedOrders);
+          return res.status(200).json(completedOrders);
+        } else {
+          console.log("Invalid filter");
+          return res.status(500).json({ error: 'Invalid filter' });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
 
   // -------------------------------------------------------------------------------- POST /orders
   async postOrder(req, res) {

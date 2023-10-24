@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // ------------------------------- Oracle connection
-let oracleConnection;
+let oracleConnection = null;
 
 try {
     oracleConnection = await oracledb.getConnection({
