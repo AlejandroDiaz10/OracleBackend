@@ -5,6 +5,8 @@ import ROUTES from "./constants.js";
 const orderRouter = Router();
 const controller = new OrderController();
 
+orderRouter.get(ROUTES.ORDERS + "/test/:column", controller.test);
+
 orderRouter.get(ROUTES.ORDERS, controller.getAllOrders);
 orderRouter.get(ROUTES.ORDERS + "/:orderLineId", controller.getOrderById);
 orderRouter.get(ROUTES.ORDERS + "/customer/:customerId", controller.getOrdersByCustomerId);

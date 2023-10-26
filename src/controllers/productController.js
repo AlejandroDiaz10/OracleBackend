@@ -1,5 +1,6 @@
 import oracleConnection from "../oracle.js";
 import elasticClient from "../elastic-client.js";
+import natural from 'natural';
 
 class ProductController {
   // -------------------------------------------------------------------------------- GET /products
@@ -134,6 +135,61 @@ class ProductController {
       body: {
         query: {
           match_all: {}
+        }
+      }
+    };
+  
+    try {
+      const body = await elasticClient.search(query);
+      if (body.hits.total.value === 0) {
+        return res.status(404).json({ error: 'No products found' });
+      }
+      const products = body.hits.hits.map((hit) => hit._source);
+      return res.status(200).json(products);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  // -------------------------------------------------------------------------------- GET /elastic-search/api/products/
+  async getByDescription(req, res) {
+    let body = req.body.description;
+
+    // Natural language processing
+    body = body.toLowerCase();
+    const tokenizer = new natural.WordTokenizer();
+    const words = tokenizer.tokenize(body);
+    const filteredWords = words.filter((word) => !natural.stopwords.includes(word));
+    body = filteredWords.join(' ');
+    
+    // const stemmer = natural.PorterStemmer;
+    // const stemmedWords = filteredWords.map((word) => stemmer.stem(word));
+    // body = stemmedWords.join(' ');
+
+    console.log(body);
+
+    const query = {
+      index: 'products',
+      body: {
+        query: {
+          bool: {
+            must: [
+              {
+                multi_match: {
+                  query: body, 
+                  fields: ['product_name', 'category', 'brand'],
+                  type: 'best_fields',
+                  tie_breaker: 0.3
+                }
+              },
+              {
+                term: {
+                  available: 1
+                }
+              }
+            ]
+          }
         }
       }
     };

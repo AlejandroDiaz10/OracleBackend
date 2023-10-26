@@ -129,57 +129,127 @@ class OrderController {
   }
 
 
+  async test(req, res) {
+    const column = req.params.column;
+    console.log(column);
+    const query = `SELECT DISTINCT ${column} FROM orders`;
+
+    try {
+      oracleConnection.execute(query, (err, results) => {
+        if (err){
+          console.log(err);
+          return res.status(500).json({ error: 'Internal Server Error' });
+        } else{
+          console.log(results.rows);
+          return res.status(200).json(results.rows);
+        }
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
   // -------------------------------------------------------------------------------- POST /orders
   async postOrder(req, res) {
-    const query = 'INSERT INTO orders (order_line_id, id, order_priority, customer_id, customer_segment, product_id, product_container, profit, quantity_ordered, sales, discount, gross_unit_price, shipping_cost, ship_mode, ship_date, order_date) VALUES (:orderLineId, :id, :orderPriority, :customerId, :customerSegment, :productId, :productContainer, :profit, :quantityOrdered, :sales, :discount, :grossUnitPrice, :shippingCost, :shipMode, :shipDate, :orderDate)';
-    const { orderLineId, id, orderPriority, customerId, customerSegment, productId, productContainer, profit, 
-      quantityOrdered, sales, discount, grossUnitPrice, shippingCost, shipMode, shipDate, orderDate } = req.body;
-    const values = { 
-      orderLineId: orderLineId, 
-      id: id, 
-      orderPriority: orderPriority, 
-      customerId: customerId, 
-      customerSegment: customerSegment, 
-      productId: productId, 
-      productContainer: productContainer, 
-      profit: profit, 
-      quantityOrdered: quantityOrdered, 
-      sales: sales, 
-      discount: discount, 
-      grossUnitPrice: grossUnitPrice, 
-      shippingCost: shippingCost, 
-      shipMode: shipMode, 
-      shipDate: shipDate, 
-      orderDate: orderDate
-    };
-  
+    const { orderPriority, customerId, productId, quantityOrdered } = req.body;
+    console.log(req.body);
+    console.log(orderPriority, customerId, productId, quantityOrdered);
+
+      const ship_modes = ["Air Regular", "Truck Delivery", "Air Express", "Express"]
+      const product_containers = ['Jumbo Barrel' , 'Paper Bag', 'Small Box', 'Large Box','Jumbo Box', 'Small Package','Medium Box']
+      const customer_segments = ["Cliente", "Home Office", "Corporativo", "Negocio Pequeño"]
+      const order_priorities = ["Low", "Not Specified", "High", "Medium", "Critical"]
+
+      const currentDate = new Date();
+      const day = currentDate.getDate().toString().padStart(2, '0');
+      const month = (currentDate.getMonth() + 1).toString().padStart(2, '0'); // Los meses en JavaScript son base cero
+      const year = currentDate.getFullYear().toString().slice(-2); // Obtén los últimos dos dígitos del año
+      const orderDate = `${day}/${month}/${year}`;
+
+      const customerSegment = customer_segments[Math.floor(Math.random() * customer_segments.length)];
+
+      let shipMode = ship_modes[Math.floor(Math.random() * ship_modes.length)];
+      let productContainer = product_containers[Math.floor(Math.random() * product_containers.length)];
+      let shipDate = `${parseInt(day) + 7}/${month}/${year}`;
+
+      if (orderPriority === "High" || orderPriority === "Critical"){
+        shipMode = "Express";
+        shipDate = `${parseInt(day) + 3}/${month}/${year}`;
+      } else if (orderPriority === "Medium"){
+        shipMode = "Air Express";
+        shipDate = `${parseInt(day) + 5}/${month}/${year}`;
+      }
+
     try {
+      const maxOrderLineIdQuery = 'SELECT MAX(order_line_id) AS max_order_line_id FROM orders';
+      const maxIdQuery = 'SELECT MAX(id) AS max_id FROM orders';
+      const productCostQuery = 'SELECT sale_price FROM products WHERE id = :productId';
+      const query = 'INSERT INTO orders (order_line_id, id, order_priority, customer_id, customer_segment, product_id, product_container, profit, quantity_ordered, sales, discount, gross_unit_price, shipping_cost, ship_mode, ship_date, order_date) VALUES (:orderLineId, :id, :orderPriority, :customerId, :customerSegment, :productId, :productContainer, :profit, :quantityOrdered, :sales, :discount, :grossUnitPrice, :shippingCost, :shipMode, :shipDate, :orderDate)';
+
+      const maxOrderLineIdResult = await oracleConnection.execute(maxOrderLineIdQuery, [], { autoCommit: true });
+      const newOrderLineId = maxOrderLineIdResult.rows[0][0] + 1;
+
+      const maxIdResult = await oracleConnection.execute(maxIdQuery, [], { autoCommit: true });
+      const newId = maxIdResult.rows[0][0] + 1;
+
+      const productCostResult = await oracleConnection.execute(productCostQuery, [productId.toString()]);
+      const grossUnitPrice = productCostResult.rows[0][0];
+
+      const sales = grossUnitPrice * quantityOrdered;
+      const shippingCost = sales * 0.1;
+      const profit = sales * .3 + shippingCost * .3;
+      const discount = 0;
+      
+      const values = { 
+          orderLineId: newOrderLineId, 
+          id: newId, 
+          orderPriority: orderPriority, 
+          customerId: customerId, 
+          customerSegment: customerSegment, 
+          productId: productId, 
+          productContainer: productContainer, 
+          profit: profit, 
+          quantityOrdered: quantityOrdered, 
+          sales: sales, 
+          discount: discount, 
+          grossUnitPrice: grossUnitPrice, 
+          shippingCost: shippingCost, 
+          shipMode: shipMode, 
+          shipDate: shipDate, 
+          orderDate: orderDate
+      };
+
+      console.log(values);
+
       const result = await oracleConnection.execute(query, values, { autoCommit: true });
+
       const newOrder = {
-        order_line_id: orderLineId, 
-        id: id, 
-        order_priority: orderPriority, 
-        customer_id: customerId, 
-        customer_segment: customerSegment, 
-        product_id: productId, 
-        product_container: productContainer, 
-        profit: profit, 
-        quantity_ordered: quantityOrdered, 
-        sales: sales, 
-        discount: discount, 
-        gross_unit_price: grossUnitPrice, 
-        shipping_cost: shippingCost, 
-        ship_mode: shipMode, 
-        ship_date: shipDate, 
-        order_date: orderDate
+          order_line_id: newOrderLineId, 
+          id: newId, 
+          order_priority: orderPriority, 
+          customer_id: customerId, 
+          customer_segment: customerSegment, 
+          product_id: productId, 
+          product_container: productContainer, 
+          profit: profit, 
+          quantity_ordered: quantityOrdered, 
+          sales: sales, 
+          discount: discount, 
+          gross_unit_price: grossUnitPrice, 
+          shipping_cost: shippingCost, 
+          ship_mode: shipMode, 
+          ship_date: shipDate, 
+          order_date: orderDate
       };
       console.log(newOrder);
       return res.status(201).json(newOrder);
     } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Internal Server Error' });
+        console.error(err);
+        return res.status(500).json({ error: 'Internal Server Error' });
     }
   }
+
   
 
   // -------------------------------------------------------------------------------- PUT /orders/:orderLineId
