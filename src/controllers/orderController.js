@@ -193,13 +193,16 @@ class OrderController {
       let shipMode = ship_modes[Math.floor(Math.random() * ship_modes.length)];
       let productContainer = product_containers[Math.floor(Math.random() * product_containers.length)];
       let shipDate = `${parseInt(day) + 7}/${month}/${year}`;
+      let shippingCost = sales * 0.1;
 
       if (orderPriority === "High" || orderPriority === "Critical"){
         shipMode = "Express";
         shipDate = `${parseInt(day) + 3}/${month}/${year}`;
+        shippingCost = sales * 0.2;
       } else if (orderPriority === "Medium"){
         shipMode = "Air Express";
         shipDate = `${parseInt(day) + 5}/${month}/${year}`;
+        shippingCost = sales * 0.15;
       }
 
     try {
@@ -218,7 +221,6 @@ class OrderController {
       const grossUnitPrice = productCostResult.rows[0][0];
 
       const sales = grossUnitPrice * quantityOrdered;
-      const shippingCost = sales * 0.1;
       const profit = sales * .3 + shippingCost * .3;
       const discount = 0;
       
