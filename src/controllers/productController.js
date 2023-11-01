@@ -9,10 +9,10 @@ class ProductController {
 
     try {
       oracleConnection.execute(query, (err, results) => {
-        if (err){ 
+        if (err) {
           console.log(err);
           return res.status(500).json({ error: 'Internal Server Error' });
-        } else{
+        } else {
           console.log(results.rows);
           return res.status(200).json(results.rows);
         }
@@ -59,7 +59,7 @@ class ProductController {
       category: category,
       available: available
     };
-  
+
     try {
       const result = await oracleConnection.execute(query, values, { autoCommit: true });
       const newProduct = {
@@ -84,17 +84,17 @@ class ProductController {
   // -------------------------------------------------------------------------------- PUT /products/:id
   async putProduct(req, res) {
     const id = req.params.id;
-    const queryCheck = 'SELECT * FROM products WHERE id = :id'; 
+    const queryCheck = 'SELECT * FROM products WHERE id = :id';
     const queryUpdate = 'UPDATE products SET product_name = :productName, description = :description, list_price = :listPrice, sale_price = :salePrice, brand = :brand, category = :category, available = :available WHERE id = :id'; // Usa un marcador de posición con nombre
     const { productName, description, listPrice, salePrice, brand, category, available } = req.body;
-    const valuesCheck = { id: id }; 
-  
+    const valuesCheck = { id: id };
+
     try {
       const resultCheck = await oracleConnection.execute(queryCheck, valuesCheck);
       if (resultCheck.rows.length === 0) {
         return res.status(404).json({ error: 'Product not found' });
       }
-  
+
       const valuesUpdate = {
         id: id,
         productName: productName,
@@ -105,7 +105,7 @@ class ProductController {
         category: category,
         available: available
       };
-  
+
       const resultUpdate = await oracleConnection.execute(queryUpdate, valuesUpdate, { autoCommit: true });
       const updatedProduct = {
         id: id,
@@ -123,7 +123,7 @@ class ProductController {
       console.error(err);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
-  }  
+  }
 
   // -------------------------------------------------------------------------------- ElasticSearch
   // -------------------------------------------------------------------------------- ElasticSearch
@@ -138,7 +138,7 @@ class ProductController {
         }
       }
     };
-  
+
     try {
       const body = await elasticClient.search(query);
       if (body.hits.total.value === 0) {
@@ -155,55 +155,58 @@ class ProductController {
   // -------------------------------------------------------------------------------- GET /elastic-search/api/products/
   async getByDescription(req, res) {
     let body = req.body.description;
+    if (!body) {
+      return res.status(400).json({ error: 'Bad Request' });
+    } else {
+      // Natural language processing
+      body = body.toLowerCase();
+      const tokenizer = new natural.WordTokenizer();
+      const words = tokenizer.tokenize(body);
+      const filteredWords = words.filter((word) => !natural.stopwords.includes(word));
+      body = filteredWords.join(' ');
 
-    // Natural language processing
-    body = body.toLowerCase();
-    const tokenizer = new natural.WordTokenizer();
-    const words = tokenizer.tokenize(body);
-    const filteredWords = words.filter((word) => !natural.stopwords.includes(word));
-    body = filteredWords.join(' ');
-    
-    // const stemmer = natural.PorterStemmer;
-    // const stemmedWords = filteredWords.map((word) => stemmer.stem(word));
-    // body = stemmedWords.join(' ');
+      // const stemmer = natural.PorterStemmer;
+      // const stemmedWords = filteredWords.map((word) => stemmer.stem(word));
+      // body = stemmedWords.join(' ');
 
-    console.log(body);
+      console.log(body);
 
-    const query = {
-      index: 'products',
-      body: {
-        query: {
-          bool: {
-            must: [
-              {
-                multi_match: {
-                  query: body, 
-                  fields: ['product_name', 'category', 'brand'],
-                  type: 'best_fields',
-                  tie_breaker: 0.3
+      const query = {
+        index: 'products',
+        body: {
+          query: {
+            bool: {
+              must: [
+                {
+                  multi_match: {
+                    query: body,
+                    fields: ['product_name', 'category', 'brand'],
+                    type: 'best_fields',
+                    tie_breaker: 0.3
+                  }
+                },
+                {
+                  term: {
+                    available: 1
+                  }
                 }
-              },
-              {
-                term: {
-                  available: 1
-                }
-              }
-            ]
+              ]
+            }
           }
         }
+      };
+
+      try {
+        const body = await elasticClient.search(query);
+        if (body.hits.total.value === 0) {
+          return res.status(404).json({ error: 'No products found' });
+        }
+        const products = body.hits.hits.map((hit) => hit._source);
+        return res.status(200).json(products);
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Internal Server Error' });
       }
-    };
-  
-    try {
-      const body = await elasticClient.search(query);
-      if (body.hits.total.value === 0) {
-        return res.status(404).json({ error: 'No products found' });
-      }
-      const products = body.hits.hits.map((hit) => hit._source);
-      return res.status(200).json(products);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Internal Server Error' });
     }
   }
 }
