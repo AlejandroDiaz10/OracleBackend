@@ -23,7 +23,7 @@ if (oracleConnection) {
 // ------------------------------ Checking Elasticseacrh connection
 if (elasticClient) {
   // fetchAndIndexData("customers");
-  // fetchAndIndexData("products");
+  // fetchAndIndexData("products"); // Run only this line of code
   // fetchAndIndexData("orders");
   // fetchAndIndexData("credit_status");
 } else {

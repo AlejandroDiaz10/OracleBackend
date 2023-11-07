@@ -177,33 +177,21 @@ class OrderController {
     console.log(req.body);
     console.log(orderPriority, customerId, productId, quantityOrdered);
 
-      const ship_modes = ["Air Regular", "Truck Delivery", "Air Express", "Express"]
-      const product_containers = ['Jumbo Barrel' , 'Paper Bag', 'Small Box', 'Large Box','Jumbo Box', 'Small Package','Medium Box']
-      const customer_segments = ["Cliente", "Home Office", "Corporativo", "Negocio Pequeño"]
-      const order_priorities = ["Low", "Not Specified", "High", "Medium", "Critical"]
+    const ship_modes = ["Air Regular", "Truck Delivery", "Air Express", "Express"]
+    const product_containers = ['Jumbo Barrel' , 'Paper Bag', 'Small Box', 'Large Box','Jumbo Box', 'Small Package','Medium Box']
+    const customer_segments = ["Cliente", "Home Office", "Corporativo", "Negocio Pequeño"]
+    const order_priorities = ["Low", "Not Specified", "High", "Medium", "Critical"]
 
-      const currentDate = new Date();
-      const day = currentDate.getDate().toString().padStart(2, '0');
-      const month = (currentDate.getMonth() + 1).toString().padStart(2, '0'); // Los meses en JavaScript son base cero
-      const year = currentDate.getFullYear().toString().slice(-2); // Obtén los últimos dos dígitos del año
-      const orderDate = `${day}/${month}/${year}`;
+    const currentDate = new Date();
+    const day = currentDate.getDate().toString().padStart(2, '0');
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0'); // Los meses en JavaScript son base cero
+    const year = currentDate.getFullYear().toString().slice(-2); // Obtén los últimos dos dígitos del año
+    const orderDate = `${day}/${month}/${year}`;
 
-      const customerSegment = customer_segments[Math.floor(Math.random() * customer_segments.length)];
+    const customerSegment = customer_segments[Math.floor(Math.random() * customer_segments.length)];
 
-      let shipMode = ship_modes[Math.floor(Math.random() * ship_modes.length)];
-      let productContainer = product_containers[Math.floor(Math.random() * product_containers.length)];
-      let shipDate = `${parseInt(day) + 7}/${month}/${year}`;
-      let shippingCost = sales * 0.1;
-
-      if (orderPriority === "High" || orderPriority === "Critical"){
-        shipMode = "Express";
-        shipDate = `${parseInt(day) + 3}/${month}/${year}`;
-        shippingCost = sales * 0.2;
-      } else if (orderPriority === "Medium"){
-        shipMode = "Air Express";
-        shipDate = `${parseInt(day) + 5}/${month}/${year}`;
-        shippingCost = sales * 0.15;
-      }
+    let shipMode = ship_modes[Math.floor(Math.random() * ship_modes.length)];
+    let productContainer = product_containers[Math.floor(Math.random() * product_containers.length)];
 
     try {
       const maxOrderLineIdQuery = 'SELECT MAX(order_line_id) AS max_order_line_id FROM orders';
@@ -221,10 +209,29 @@ class OrderController {
       const grossUnitPrice = productCostResult.rows[0][0];
 
       const sales = grossUnitPrice * quantityOrdered;
+      let shippingCost = sales * 0.1;
+      let futureDate = new Date(currentDate);
+      futureDate.setDate(currentDate.getDate() + 7);
+
+      if (orderPriority === "High" || orderPriority === "Critical"){
+        shipMode = "Express";
+        futureDate.setDate(currentDate.getDate() + 3);
+        shippingCost = sales * 0.2;
+      } else if (orderPriority === "Medium"){
+        shipMode = "Air Express";
+        futureDate.setDate(currentDate.getDate() + 5);
+        shippingCost = sales * 0.15;
+      }
+
+      const dayF = futureDate.getDate().toString().padStart(2, '0');
+      const monthF = (futureDate.getMonth() + 1).toString().padStart(2, '0'); // Los meses en JavaScript son base cero
+      const yearF = futureDate.getFullYear().toString().slice(-2); // Obtén los últimos dos dígitos del año
+      const shipDate = `${dayF}/${monthF}/${yearF}`;
+
       const profit = sales * .3 + shippingCost * .3;
       const discount = 0;
       
-      const values = { 
+      const values = {  
           orderLineId: newOrderLineId, 
           id: newId, 
           orderPriority: orderPriority, 
