@@ -58,39 +58,60 @@ class OrderController {
       return formattedDate;
     };
 
+    const getProductName = async (productId) => {
+      const productQuery = 'SELECT * FROM products WHERE id = :productId';
+      try {
+        const productResult = await oracleConnection.execute(productQuery, [productId]);
+        if (productResult.rows.length > 0) {
+          return productResult.rows[0][1]; 
+        } else {
+          return 'Product name not found';
+        }
+      } catch (error) {
+        console.error('Error fetching product name:', error);
+        return 'Error fetching product name'; 
+      }
+    };
+
     try {
       const result = await oracleConnection.execute(query, [customerId]);
       if (result.rows.length === 0) {
         console.error('No orders found for this customer');
         return res.status(404).json({ error: 'No orders found for this customer' });
       } else {
+        const data_dic = result.rows.map(order => {
+          return {
+            'order_line_id': order[0],
+            'id': order[1],
+            'order_priority': order[2],
+            'customer_id': order[3],
+            'customer_segment': order[4],
+            'product_id': order[5],
+            'product_container': order[6],
+            'profit': order[7],
+            'quantity_ordered': order[8],
+            'sales': order[9],
+            'discount': order[10],
+            'gross_unit_price': order[11],
+            'shipping_cost': order[12],
+            'ship_mode': order[13],
+            'ship_date': order[14],
+            'order_date': order[15]
+          }
+        });
+
+        for (const order of data_dic) {
+          const productName = await getProductName(order.product_id);
+          order.product_name = productName;
+        }
+
         if (filter === "All") {
-          console.log(result.rows);
-          const data_dic = result.rows.map(order => {
-            return {
-              'order_line_id': order[0],
-              'id': order[1],
-              'order_priority': order[2],
-              'customer_id': order[3],
-              'customer_segment': order[4],
-              'product_id': order[5],
-              'product_container': order[6],
-              'profit': order[7],
-              'quantity_ordered': order[8],
-              'sales': order[9],
-              'discount': order[10],
-              'gross_unit_price': order[11],
-              'shipping_cost': order[12],
-              'ship_mode': order[13],
-              'ship_date': order[14],
-              'order_date': order[15]
-            }
-          });
           console.log(res);
           return res.status(200).json(data_dic);
+
         } else if (filter === 'Pending') {
-          const pendingOrders = result.rows.filter(order => {
-            const formattedDate = new Date(formatDate(order[14]));
+          const pendingOrders = data_dic.filter(order => {
+            const formattedDate = new Date(formatDate(order.ship_date));
             return formattedDate > currentDate
           });
 
@@ -100,8 +121,8 @@ class OrderController {
           }
 
           pendingOrders.sort((a, b) => {
-            const dateA = new Date(formatDate(a[14]));
-            const dateB = new Date(formatDate(b[14]));
+            const dateA = new Date(formatDate(a.order_date));
+            const dateB = new Date(formatDate(b.order_date));
             if (dateA < dateB) {
               return -1;
             }
@@ -113,9 +134,10 @@ class OrderController {
 
           console.log(pendingOrders);
           return res.status(200).json(pendingOrders);
+
         } else if (filter === 'Completed') {
-          const completedOrders = result.rows.filter(order => {
-            const formattedDate = new Date(formatDate(order[14]));
+          const completedOrders = data_dic.filter(order => {
+            const formattedDate = new Date(formatDate(order.ship_date));
             return formattedDate <= currentDate
           });
 
@@ -125,8 +147,8 @@ class OrderController {
           }
 
           completedOrders.sort((a, b) => {
-            const dateA = new Date(formatDate(a[14]));
-            const dateB = new Date(formatDate(b[14]));
+            const dateA = new Date(formatDate(a.order_date));
+            const dateB = new Date(formatDate(b.order_date));
             if (dateA < dateB) {
               return -1;
             }
@@ -138,6 +160,7 @@ class OrderController {
 
           console.log(completedOrders);
           return res.status(200).json(completedOrders);
+
         } else {
           console.log("Invalid filter");
           return res.status(500).json({ error: 'Invalid filter' });
