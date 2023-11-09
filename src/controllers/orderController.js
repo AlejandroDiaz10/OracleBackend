@@ -64,7 +64,7 @@ class OrderController {
         console.error('No orders found for this customer');
         return res.status(404).json({ error: 'No orders found for this customer' });
       } else {
-        if (filter === undefined) {
+        if (filter === "All") {
           console.log(result.rows);
           const data_dic = result.rows.map(order => {
             return {
@@ -88,7 +88,7 @@ class OrderController {
           });
           console.log(res);
           return res.status(200).json(data_dic);
-        } else if (filter === 'pending') {
+        } else if (filter === 'Pending') {
           const pendingOrders = result.rows.filter(order => {
             const formattedDate = new Date(formatDate(order[14]));
             return formattedDate > currentDate
@@ -113,7 +113,7 @@ class OrderController {
 
           console.log(pendingOrders);
           return res.status(200).json(pendingOrders);
-        } else if (filter === 'completed') {
+        } else if (filter === 'Completed') {
           const completedOrders = result.rows.filter(order => {
             const formattedDate = new Date(formatDate(order[14]));
             return formattedDate <= currentDate
