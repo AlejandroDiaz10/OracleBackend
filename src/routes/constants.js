@@ -5,6 +5,7 @@ const ROUTES = {
     CREDIT_STATUS: '/api/credit-status',
     CREDIT_LINE: '/api/credit-lines',
     ELASTIC_SEARCH: '/api/elastic-search',
+    BUCKETS: '/api/buckets',
 };
 
 export default ROUTES;

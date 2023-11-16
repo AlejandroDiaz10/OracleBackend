@@ -5,6 +5,7 @@ import customerRouter from './src/routes/customer.js';
 import productRouter from './src/routes/product.js';
 import orderRouter from './src/routes/order.js';
 import creditStatusRouter from './src/routes/creditStatus.js';
+import bucketRouter from './src/routes/buckets.js';
 import fetchAndIndexData from './src/index-es.js';
 
 const app = express();
@@ -35,6 +36,7 @@ app.use(customerRouter);
 app.use(productRouter);
 app.use(orderRouter);
 app.use(creditStatusRouter);
+app.use(bucketRouter);
 
 // ------------------------------ Listening port
 const port = process.env.PORT || 8080; 
