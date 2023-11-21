@@ -13,5 +13,6 @@ customerRouter.get(ROUTES.CUSTOMERS, controller.getAllCustomers);
 customerRouter.get(ROUTES.CUSTOMERS + "/:id", controller.getCustomerById);
 customerRouter.post(ROUTES.CUSTOMERS, controller.postCustomer);
 customerRouter.put(ROUTES.CUSTOMERS + "/:id", controller.putCustomer);
+customerRouter.put(ROUTES.CUSTOMERS + "/credit/:id", controller.updateCredit);
 
 export default customerRouter; 

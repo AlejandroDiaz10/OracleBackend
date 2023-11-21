@@ -86,8 +86,8 @@ class CustomerController {
   async putCustomer(req, res) {
     const id = req.params.id;
     const queryCheck = 'SELECT * FROM customers WHERE id = :id'; 
-    const queryUpdate = 'UPDATE customers SET name = :name, age = :age, ssn = :ssn, occupation = :occupation, annual_income = :annualIncome, monthly_inhand_salary = :monthlyInhandSalary, num_bank_accounts = :numBankAccounts, num_credit_card = :numCreditCard WHERE id = :id'; // Usa un marcador de posición con nombre
-    const { name, age, ssn, occupation, annualIncome, monthlyInhandSalary, numBankAccounts, numCreditCard } = req.body;
+    const queryUpdate = 'UPDATE customers SET name = :name, age = :age, ssn = :ssn, occupation = :occupation, annual_income = :annualIncome, monthly_inhand_salary = :monthlyInhandSalary, num_bank_accounts = :numBankAccounts, num_credit_card = :numCreditCard, credit = :credit WHERE id = :id';
+    const { name, age, ssn, occupation, annualIncome, monthlyInhandSalary, numBankAccounts, numCreditCard, credit } = req.body;
     const valuesCheck = { id: id }; 
   
     try {
@@ -105,7 +105,8 @@ class CustomerController {
         annualIncome: annualIncome,
         monthlyInhandSalary: monthlyInhandSalary,
         numBankAccounts: numBankAccounts,
-        numCreditCard: numCreditCard
+        numCreditCard: numCreditCard,
+        credit: credit
       };
   
       const resultUpdate = await oracleConnection.execute(queryUpdate, valuesUpdate, { autoCommit: true });
@@ -118,10 +119,42 @@ class CustomerController {
         annual_income: annualIncome,
         monthly_inhand_salary: monthlyInhandSalary,
         num_bank_accounts: numBankAccounts,
-        num_credit_card: numCreditCard
+        num_credit_card: numCreditCard,
+        credit: credit
       };
       console.log(updatedCustomer);
       return res.status(200).json(updatedCustomer);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  async updateCredit(req, res) {
+    const id = req.params.id;
+    const queryCheck = 'SELECT * FROM customers WHERE id = :id'; 
+    const queryUpdate = 'UPDATE customers SET credit = credit + :credit WHERE id = :id';
+    const { credit } = req.body;
+    const valuesCheck = { id: id }; 
+  
+    try {
+      const resultCheck = await oracleConnection.execute(queryCheck, valuesCheck);
+      if (resultCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+  
+      const valuesUpdate = {
+        id: id,
+        credit: credit
+      };
+  
+      const resultUpdate = await oracleConnection.execute(queryUpdate, valuesUpdate, { autoCommit: true });
+      const updatedCustomerCredit = {
+        id: id,
+        credit: resultCheck.rows[0][9] + credit
+      };
+      console.log(updatedCustomerCredit);
+      return res.status(200).json(updatedCustomerCredit);
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: 'Internal Server Error' });

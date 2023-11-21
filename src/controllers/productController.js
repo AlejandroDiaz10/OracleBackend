@@ -1,6 +1,7 @@
 import oracleConnection from "../oracle.js";
 import elasticClient from "../elastic-client.js";
 import natural from 'natural';
+import translate from '@iamtraction/google-translate'; // https://github.com/iamtraction/google-translate
 
 class ProductController {
   // -------------------------------------------------------------------------------- GET /products
@@ -155,21 +156,30 @@ class ProductController {
   // -------------------------------------------------------------------------------- GET /elastic-search/api/products/
   async getByDescription(req, res) {
     let body = req.body.description;
+    let bodyTranslated = "";
     if (!body) {
       return res.status(400).json({ error: 'Bad Request' });
     } else {
+      try {
+        const result = await translate(body, { to: 'en' });
+        bodyTranslated = result.text;
+        console.log("Translation: ", bodyTranslated); 
+      } catch (error) {
+        console.error(error);
+      }
+
       // Natural language processing
-      body = body.toLowerCase();
+      bodyTranslated = bodyTranslated.toLowerCase();
       const tokenizer = new natural.WordTokenizer();
-      const words = tokenizer.tokenize(body);
+      const words = tokenizer.tokenize(bodyTranslated);
       const filteredWords = words.filter((word) => !natural.stopwords.includes(word));
-      body = filteredWords.join(' ');
+      bodyTranslated = filteredWords.join(' ');
 
       // const stemmer = natural.PorterStemmer;
       // const stemmedWords = filteredWords.map((word) => stemmer.stem(word));
-      // body = stemmedWords.join(' ');
+      // bodyTranslated = stemmedWords.join(' ');
 
-      console.log(body);
+      // console.log(bodyTranslated);
 
       const query = {
         index: 'products',
@@ -179,7 +189,7 @@ class ProductController {
               must: [
                 {
                   multi_match: {
-                    query: body,
+                    query: bodyTranslated,
                     fields: ['product_name', 'category', 'brand'],
                     type: 'best_fields',
                     tie_breaker: 0.3
