@@ -34,18 +34,30 @@ class CustomerController {
         console.error('Customer not found');
         return res.status(404).json({ error: 'Customer not found' });
       } else {
-        const formattedData = result.rows.map(row => ({
-          id: row[0],
-          name: row[1],
-          age: row[2],
-          ssn: row[3],
-          occupation: row[4],
-          annual_income: row[5],
-          monthly_inhand_salary: row[6],
-          num_bank_accounts: row[7],
-          num_credit_card: row[8],
-          credit: row[9]
-        }));
+        // const formattedData = result.rows.map(row => ({
+        //   id: row[0],
+        //   name: row[1],
+        //   age: row[2],
+        //   ssn: row[3],
+        //   occupation: row[4],
+        //   annual_income: row[5],
+        //   monthly_inhand_salary: row[6],
+        //   num_bank_accounts: row[7],
+        //   num_credit_card: row[8],
+        //   credit: row[9]
+        // }));
+        const formattedData = {
+          id: result.rows[0][0],
+          name: result.rows[0][1],
+          age: result.rows[0][2],
+          ssn: result.rows[0][3],
+          occupation: result.rows[0][4],
+          annual_income: result.rows[0][5],
+          monthly_inhand_salary: result.rows[0][6],
+          num_bank_accounts: result.rows[0][7],
+          num_credit_card: result.rows[0][8],
+          credit: result.rows[0][9]
+        };
     
         console.log(formattedData);
         return res.status(200).json(formattedData);
