@@ -117,7 +117,7 @@ class OrderController {
 
           if (pendingOrders.length === 0) {
             console.error('No pending orders found for this customer');
-            return res.status(200).json({ message: 'No pending orders found for this customer' })
+            return res.status(404).json({ message: 'No pending orders found for this customer' })
           }
 
           pendingOrders.sort((a, b) => {
@@ -143,7 +143,7 @@ class OrderController {
 
           if (completedOrders.length === 0) {
             console.error('No completed orders found for this customer');
-            return res.status(200).json({ message: 'No completed orders found for this customer' })
+            return res.status(404).json({ message: 'No completed orders found for this customer' })
           }
 
           completedOrders.sort((a, b) => {
